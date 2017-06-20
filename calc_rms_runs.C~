@@ -1,0 +1,98 @@
+void calc_rms_runs(int runs)
+{
+
+  gSystem->Load("/scratch2/gmuraru/dmtpc_software/DmtpcCore/lib/libDmtpcCore.so");
+  gSystem->Load("/scratch2/gmuraru/dmtpc_software/DmtpcAnalysis/lib/libDmtpcAnalysis.so");
+
+  double stops[5] = {0,0.34,0.61,0.84,1.0};
+  gStyle->SetOptStat(0); 
+  double red[5] = {0.0,0.0,0.87,1.0,0.51};
+  double green[5] = {0.0,0.81,1.00,0.2,0.0};
+  double blue[5] = {0.51,1.0,0.12,0.0,0.0};
+  TColor::CreateGradientColorTable(5,stops,red,green,blue,255);
+  gStyle->SetNumberContours(255);
+
+  const char * dir ="/scratch3/darkmatter/dmtpc/data/m3/2016/02/raw/";  
+  int cam = 1;
+  int ncam = 1;
+
+  for (int fi=0;fi<runs;fi++){
+   
+    d = new dmtpc::core::Dataset;
+    int run=1038014;
+    d->open(TString::Format("%s/m3_gain_R%05d.raw.root",dir,run+fi)); 
+    TH2 * bias = d->biasAvg(cam);
+    
+    int n = d->nevents(); 
+    TH2 * image = new TH2D("image","image", d->event()->ccdData(cam)->GetNbinsX(), 
+			   d->event()->ccdData(cam)->GetXaxis()->GetXmin(), 
+			   d->event()->ccdData(cam)->GetXaxis()->GetXmax(), 
+			   d->event()->ccdData(cam)->GetNbinsY(), 
+			   d->event()->ccdData(cam)->GetYaxis()->GetXmin(), 
+			   d->event()->ccdData(cam)->GetYaxis()->GetXmax());
+    TFile * Fe55_gain_multiple = new TFile("Fe55_gain_multiple.root","RECREATE");
+    TTree t("pix_t","Pixel Tree");
+    int nbins = 1000;
+    // TF1 * gFit = new TF1("gFit","gaus");
+    
+    TH1F* intensity=new TH1F("intensity","intensity",nbins,-100,100);
+    double rms = 0;
+    double mean = 0;
+    double chi = 0;
+    int runnum = 0;
+    double ccdTemp;
+    int nevents = 0;
+    
+    //t.Branch("intensity",&intensity);
+    t.Branch("mean",&mean);
+    t.Branch("rms",&rms);
+    // t.Branch("runnum",&runnum);
+    t.Branch("nevents",&nevents);
+    t.Branch("chi",&chi);
+    t.Branch("ccdTemp",&ccdTemp);
+    
+    for (int i = 0; i < d->nevents(); i++)
+      {
+	d->getEvent(i);
+	//runnum = d->event()->runNumber();
+	nevents = d->nevents();
+   
+	image = d->event()->getImage(cam)->getVisible(); 
+	image->Add(d->biasAvg(cam),-1);
+	ccdTemp = d->event()->ccdConfig(cam)->ccdTemp;
+	
+	for (int m=0; m<image->GetNbinsX(); m++){
+	  for (int n=0; n<image->GetNbinsY(); n++) {
+	    float pixval=image->GetBinContent(m,n);
+	    
+	    intensity->Fill(pixval);
+	  }
+	}
+	TF1 * gFit = new TF1("gFit","gaus"); 
+	intensity->Fit(gFit);
+	rms = intensity->GetRMS(); //gFit->GetParameter(2);
+	mean = gFit->GetParameter(1);
+	chi = gFit->GetChisquare();
+	
+	t.Fill();
+      }  
+  
+    intensity->SetStats(kTRUE);
+    gStyle->SetOptStat(1111);
+    intensity->SetXTitle("ADU"); 
+    intensity->SetYTitle("Number of Entries");
+    
+    t->Write();
+    // TCanvas *c2 = new TCanvas("c2","",0,0,600,600);
+    // c2->cd();
+    // intensity->Draw();
+    // intensity->Write();
+    // c2->Update();
+    // c2->SetLogy();
+    
+    // Fe55_gain->Write();
+    // Fe55_gain->Close();
+  }  
+}
+
+
