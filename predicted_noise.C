@@ -18,21 +18,23 @@
   
   //read_noise[0] = 11.2;
   //read_noise[1] = 10.2;
-  read_noise[0] = 11.3; //9.6;                                                                                  
-  
+  read_noise[0] = 11.3; //9.6;
+  //read_noise[0] =7.38;//ADU
+
   //adu_pe[0] = 1.55;
   //adu_pe[1] = 1.52;
-  adu_pe[0] = 1.53; //1.52;                                                                                     
-  
+  adu_pe[0] = 1.53; //1.52;  
   
   //dark should be:  dark[0] = 0.6/(100*adu_pe[1]*pixels); but going to multiply by pixels and gain in calculation, so just omitting here
   //dark[0] = 2.5/(100);
   //dark[1] = 0.6/(100);
-  dark[0] = 40.8/(100); //0.7/(100);                                                                            
-  
-  double exp[14] = {1.0,2.0,5.0,10.0,15.0,30.0,40.0,50.0,60.0,70.0,80.0,90.0,100.0,120.0};
+  //dark[0] = 40.8/(100); //0.7/(100);//WP taken out and replace with line below
+  dark[0]=42.73/(100);
+  //dark[0]=27.93/(100);
+
+  double exp[4] = {1.0,2.0,5.0,10.0};
  
-  double noise[14];
+  double noise[4];
   //TGraph * graphs[ncam];
   //TCanvas * c1[ncam];
   
@@ -44,11 +46,12 @@
  //gr2->SetLineColor(kRed);
   
  //for(int c = 0; c < ncam; c++){
-  for(int i = 0; i < 14; i++){
-    noise[i] = (TMath::Sqrt(read_noise[0]*adu_pe[0]*read_noise[0]*adu_pe[0] + dark[0]*exp[i]*dark[0]*exp[i]))/1.41;
+  for(int i = 0; i < 4; i++){
+    noise[i] = (TMath::Sqrt(read_noise[0]*adu_pe[0]*read_noise[0]*adu_pe[0] + dark[0]*exp[i]*dark[0]*exp[i]));
+    //noise[i] = (TMath::Sqrt(read_noise[0]*adu_pe[0] + dark[0]*exp[i]));
     //}
    
-    gr1 = new TGraph(14,exp,noise);
+    gr1 = new TGraph(4,exp,noise);
     gr1->SetLineColor(kRed);
     /*graphs[c] = new TGraph(5,exp,noise);
       c1[c] = new TCanvas();
@@ -61,24 +64,28 @@
 
    }
 
-  Double_t exp_time[3] = {2.0,15.0,30.0};
-  Double_t noise_meassured[3] = {12.7,12.7,12.7};
-  Double_t ex[3] = {.1,.1,.5};
-  Double_t ey[3] = {.8,.7,2.};
+  Double_t exp_time[4] = {1.0,3.0,5.0,10.0};
+  Double_t noise_meassured[4] = {19.97,20.01,20.04,19.98};//{15.67,15.65,15.67,15.74};
+  Double_t ex[4] = {0.1,0.1,0.1,0.1};//{.1,.1,.5};
+  Double_t ey[4] = {0.2,0.2,0.2,0.2};//{.8,.7,.2};
   
-  TGraphErrors *gr2 = new TGraphErrors(3,exp_time,noise_meassured,ex,ey);
+  TGraphErrors *gr2 = new TGraphErrors(4,exp_time,noise_meassured,ex,ey);
   // gr2->SetLineColor(kRed);
   gr2->SetMarkerStyle(21);
   gr2->SetMarkerColor(kBlue);
   
   mg->Add(gr1);
   mg->Add(gr2);
-  
+ 
   c1->cd(); 
   mg->Draw("alp");
-  mg->SetTitle(Form("Predicted Noise vs. Exposure Time"));                                          
-  mg->GetXaxis()->SetTitle("Exposure Time (s)");                                                        
-  mg->GetYaxis()->SetTitle("Predicted Noise (ADU)");                                                    
+  mg->SetTitle(Form("Predicted Noise vs. Exposure Time"));
+  mg->GetXaxis()->SetTitle("Exposure Time (s)");
+  mg->GetYaxis()->SetTitle("Predicted Noise [e]");
+  auto leg = new TLegend(0.55,0.45,0.85,0.7);
+  leg->AddEntry(gr1, "Predicted Noise");
+  leg->AddEntry(gr2, "Measured Noise");
+  leg->Draw();                        
   //  mg->Draw("alp");
   c1->Update();
   
