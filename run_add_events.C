@@ -55,28 +55,27 @@ void load_libs_and_classes()
 
 // set of macro command pars MUST BE IDENTICAL to pars of $mac script
 // belo as they are all passed to it w/o processing
-void run_calc_rms
+void run_add_events
 (
  int run =1
  ,int cam = 0
- , const char * dir = "/scratch3/wparker2/dmtpc2/data/2017/10/raw/"
+ , const char * dir = "/scratch3/wparker2/dmtpc2/data/2017/08/raw/"
  )
 {  
   Info("run_calc_rms","Started");
   gSystem->AddIncludePath("-I$DMTPC_HOME/DmtpcCore/include");
   load_libs_and_classes();
 
-  TString macro_file="calc_rms.C+g";
-  Info("run_calc_rms","Loading main macro='%s'... ",macro_file.Data());
+  TString macro_file="add_events.C+g";
+  Info("run_add_events","Loading main macro='%s'... ",macro_file.Data());
   
   if (gROOT->LoadMacro(macro_file))
-    Fatal("run_calc_rms","Can't load macro='%s'",macro_file.Data());
+    Fatal("run_add_events","Can't load macro='%s'",macro_file.Data());
 
   // MAIN JOB 
-  Info("run_calc_rms","It seems like ok, starting main job now... ");
-  for (int camnum=0; camnum<4 ; camnum++)
-    {
-      calc_rms(run,camnum,dir);
-    }
-  Info("run_calc_rms","Finished");
+  Info("run_add_events","It seems like ok, starting main job now... ");
+
+  add_events(run,cam,dir);
+  
+  Info("run_add_events","Finished");
 } // run_calc_rms

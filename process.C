@@ -114,22 +114,23 @@ void process(int run=1, int cam = 0, const char * dir = "/scratch3/wparker2/dmtp
   gStyle->SetNumberContours(255);
   
 
-  ///////////Load up the data
-  TString fout=Form("/scratch3/wparker2/dmtpc2/data/2017/hptpc_neutron_R%05d.process.root",run);
-
+  ///////////Load up the data hard coded
+  TString fout=Form("/scratch3/wparker2/dmtpc2/data/2017/hptpc_test_R%05d.process.root",run);
+ 
   //  TFile * foutFile = new TFile(fout,"RECREATE");
 
-  TString pdir="pict_sept", fout_mask;
+  //Hardcode where save images
+  TString pdir="pict_oct", fout_mask;
   gSystem->mkdir(pdir);
-
-  TString idir="/home/wparker2/s3/dmtpc2/data/2017/08"
-    ,fmask="hptpc_neutron"
+  //name of directory where to save
+  TString idir="/home/wparker2/s3/dmtpc2/data/2017/10"
+    ,fmask="hptpc_test"
     ,hname
     ;
   TString gname = "";
-
+  //open data
   dmtpc::core::Dataset *d = new dmtpc::core::Dataset;
-  d->open(TString::Format("%s/hptpc_neutron_R%05d.raw.root",dir,run));
+  d->open(TString::Format("%s/hptpc_test_R%05d.raw.root",dir,run));
  
   int n = d->nevents();
   int rnum = d->event()->run();
@@ -145,7 +146,8 @@ void process(int run=1, int cam = 0, const char * dir = "/scratch3/wparker2/dmtp
   double nevEr[n];
   bool save_pict = false;
   bool make_freqHist = true;
-  for (int i=0; i<n; i++)
+  //initialise arrays  
+for (int i=0; i<n; i++)
     {
       for ( int j=0; j <ncam ; j++)
         {
@@ -166,15 +168,15 @@ void process(int run=1, int cam = 0, const char * dir = "/scratch3/wparker2/dmtp
 
   Info("process","Process %d frames of run #%d: %d active camera(s)",n,rnum,ncam);
   for (int i = 0; i < n; i++) {
-    
+    //over all events
     d->getEvent(i);
     for (int j=0; j<ncam; j++) {
-      
+      //over all cams
       ccdtemp[i][j] = d->event()->ccdConfig(j)->ccdTemp;
     
       if (dbg)
 	Info("process","  Cam %d: temperature: %g degrees Event %d",j,ccdtemp[i][j],i);
-
+      //Get image and bias
       TH2D * hraw =     (TH2D*) d->event()->ccdData(j)->Clone();
       TH2D * hbias_avg= (TH2D*) d->biasAvg(j)->Clone();
 
@@ -182,12 +184,12 @@ void process(int run=1, int cam = 0, const char * dir = "/scratch3/wparker2/dmtp
         Warning("my_first","Ev %d, camera %d: can't take camera image, skip it!",i,j);
         continue;
       }
-
+      //subtract bias
       hname = hraw->GetName();
       hname += "_sub";
       TH2D * hsub =     (TH2D*) hraw->Clone(hname);
       hsub->Add(hbias_avg,-1);
-
+      //add to total sum of all bias subtractr
       if (!hsub_all[j]) {
 	hname += "_all";
 	hsub_all[j] = (TH2D*) hsub->Clone(hname);
@@ -195,7 +197,7 @@ void process(int run=1, int cam = 0, const char * dir = "/scratch3/wparker2/dmtp
       }
       else
 	hsub_all[j]->Add(hsub,norm_cf);
-
+      //add to total sum of all raw images
       if (!hraw_all[j]) {
 	hname = hraw->GetName();
 	hname += "_raw_all";
@@ -249,6 +251,7 @@ void process(int run=1, int cam = 0, const char * dir = "/scratch3/wparker2/dmtp
   if (!cmy)
     cmy = new TCanvas("cmy","cmy",10,10,600,600); 
 
+  //Make plots of raw and bias subtracted pixel intensity histogram, and draw raw and bias subbed images 
   for (int j=0; j<ncam; j++) {
     hname = Form("Intensity_sub_%d",j);
     make_freqHistos(hsub_all[j],pdir.Data(),rnum,j,0,aveMean,aveRMS,1,hname);
@@ -269,7 +272,7 @@ void process(int run=1, int cam = 0, const char * dir = "/scratch3/wparker2/dmtp
     //save_pictures(fout_mask,"cmy");
     hname = Form("hraw_%d",j);
     hraw_all[j]->Write(hname);
-
+    //Plot mean pixel value, rms , and temp across a run
     for (int i=0; i < n; i++)
       {
 	meanVec[i]=mean[i][j];

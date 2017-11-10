@@ -59,7 +59,7 @@ void run_process
 (
  int run =1
  ,int cam = 0
- , const char * dir = "/scratch3/wparker2/dmtpc2/data/2017/09/raw/"
+ , const char * dir = "/scratch3/wparker2/dmtpc2/data/2017/10/raw/"
  )
 {  
   Info("run_process","Started");
